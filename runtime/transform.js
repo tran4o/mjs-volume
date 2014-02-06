@@ -91,12 +91,88 @@ var Transform = exports.Transform = Object.create(Base, {
         }
     },
 
+    _idx: {
+        value: function(i, j) {
+            return (i * 4) + j;
+        }
+    },
+
     matrix: {
         get: function() {
             if (this._dirty) {
                 if (this._matrix == null) {
                     this._matrix = mat4.create();
                 }
+
+
+                if (this._intermediateMatrices == null) {
+                    this._intermediateMatrices = [];
+
+                    this._intermediateMatrices.push(mat4.identity());   //idx: 0 tmp
+                    this._intermediateMatrices.push(mat4.identity());   //idx: 1 tr
+                    this._intermediateMatrices.push(mat4.identity());   //idx: 2 scale
+                    this._intermediateMatrices.push(mat4.identity());   //idx: 3 rotation
+                }
+
+
+            // apply translation
+            var matrix = this._matrix;
+                mat4.identity(this._matrix);
+                mat4.identity(this._intermediateMatrices[0]);
+                mat4.identity(this._intermediateMatrices[1]);
+                mat4.identity(this._intermediateMatrices[2]);
+                mat4.identity(this._intermediateMatrices[3]);
+
+            for (i = 0; i < 3; i++) {
+                for (j = 0; j < 3; j++) {
+                    matrix[this._idx(3,i)] =  matrix[this._idx(3,i)] + this._translation[j] * matrix[this._idx(j,i)];
+                }
+            }
+
+
+            // apply rotation
+            var x,y,z,w;
+            if (this._rotationMode === Transform._AXIS_ANGLE) {
+                quat4.fromAngleAxis(this._rotation[3], this._rotation, this._orientation);
+            } 
+
+            x = this._orientation[0];
+            y = this._orientation[1];
+            z = this._orientation[2];
+            w = this._orientation[3];
+
+            var rotationMatrix = mat3.createFrom(1 - 2 * (y * y + z * z),
+                                      2 * ((x * y) - (z * w)),
+                                      2 * (x * z + y * w),
+                                      2 * (x * y + z * w),
+                                      1 - 2 * (x * x + z * z),
+                                      2 * (y * z - x * w),
+                                      2 * (x * z - y * w),
+                                      2 * (y * z + x * w),
+                                      1 - 2 * (x * x + y * y));
+
+            //var test1 = 2 * ((x * y) - (z * w));
+            //var test = 2 * (y * z - x * w);
+
+            //debugger;
+            //rotationMatrix = mat3.createFrom(1, 0, 0, 0, 0, -1, 0, 1, 0);
+
+            //console.log(mat3.str(rotationMatrix));
+
+            mat3.toMat4(rotationMatrix, this._intermediateMatrices[3]);
+            mat4.set(this._matrix, this._intermediateMatrices[1]);
+            mat4.multiply(this._intermediateMatrices[1], this._intermediateMatrices[3], this._matrix);
+        
+            // apply scale
+            for (i = 0; i < 3; i++) {
+                for (j = 0; j < 3; j++) {
+                    matrix[this._idx(i,j)] = matrix[this._idx(i,j)] * this._scale[i];
+                }
+            }
+
+            //debugger;
+/*
+
                 if (this._intermediateMatrices == null) {
                     this._intermediateMatrices = [];
 
@@ -119,7 +195,9 @@ var Transform = exports.Transform = Object.create(Base, {
 
                 if (this._rotationMode === Transform._AXIS_ANGLE) {
                     mat4.identity(this._intermediateMatrices[3]);
-                    mat4.rotate(this._intermediateMatrices[3], this._rotation[3], this._rotation);
+                    quat4.fromAngleAxis(this._rotation[3], this._rotation, this._orientation );
+                    quat4.toMat4(this._orientation, this._intermediateMatrices[3]);
+
                 } else {
                     quat4.toMat4(this._orientation, this._intermediateMatrices[3]);
                 } 
@@ -127,7 +205,43 @@ var Transform = exports.Transform = Object.create(Base, {
                 mat4.multiply(this._matrix, this._intermediateMatrices[1]);
                 mat4.multiply(this._matrix, this._intermediateMatrices[2]);
                 mat4.multiply(this._matrix, this._intermediateMatrices[3]);
+*/
+                /*
+                this._matrix[0] = 0.695486;
+                this._matrix[1] = 0;
+                this._matrix[2] = 0;
+                this._matrix[3] = 0;
+                this._matrix[4] = 0;
+                this._matrix[5] = 0;
+                this._matrix[6] = -0.000202;
+                this._matrix[7] = 0;
+                this._matrix[8] = 0;
+                this._matrix[9] = 1;
+                this._matrix[10] = 0;
+                this._matrix[11] = 0;
+                this._matrix[12] = -7.010694;
+                this._matrix[13] = -9.999445;
+                this._matrix[14] = -0.019999;
+                this._matrix[15] = 1;*/
+/*
+0.695486 0.695486
+-0.000000 0.000000
+0.000000 0.000000
+0.000000 0.000000
+0.000000 0.000000
+0.000000 0.000000
+-0.000202 -0.000202
+0.000000 0.000000
+0.000000 0.000000
+1.000000 1.000000
+0.000000 0.000000
+0.000000 0.000000
+-7.010694 -7.010694
+-9.999445 -9.999445
+-0.019999 -0.019999
+1.000000 1.000000
 
+*/
                 //we can be silent about this one (not use this._updateDirtyFlag(false))
                 this._dirty = false;
             }
