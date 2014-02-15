@@ -381,13 +381,15 @@ var Channel = exports.Channel = Object.create(Base, {
                             this._vecs[1][1] = outputArray[idx2 + 1];
                             this._vecs[1][2] = outputArray[idx2 + 2];
 
-                            var k1 = this._quats[0];
-                            var k2 = this._quats[1];
+                            //var k1 = this._quats[0];
+                            //var k2 = this._quats[1];
 
-                            quat4.fromAngleAxis(outputArray[idx1 + 3],
-                                this._vecs[0], k1);
-                            quat4.fromAngleAxis(outputArray[idx2 + 3],
-                                this._vecs[1], k2);
+                           // quat4.fromAngleAxis(outputArray[idx1 + 3],
+                            //    this._vecs[0], k1);
+                            //quat4.fromAngleAxis(outputArray[idx2 + 3],
+                            //    this._vecs[1], k2);
+                            var k1 = quat4.createFrom(outputArray[idx1 + 0],outputArray[idx1 + 1],outputArray[idx1 + 2],outputArray[idx1 + 3]);
+                            var k2 = quat4.createFrom(outputArray[idx2 + 0],outputArray[idx2 + 1],outputArray[idx2 + 2],outputArray[idx2 + 3]);
                             quat4.slerp(k1, k2, ratio, interpolatedValue);
                         }
 

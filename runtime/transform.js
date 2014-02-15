@@ -132,9 +132,9 @@ var Transform = exports.Transform = Object.create(Base, {
 
             // apply rotation
             var x,y,z,w;
-            if (this._rotationMode === Transform._AXIS_ANGLE) {
-                quat4.fromAngleAxis(this._rotation[3], this._rotation, this._orientation);
-            } 
+            //if (this._rotationMode === Transform._AXIS_ANGLE) {
+            //    quat4.fromAngleAxis(this._rotation[3], this._rotation, this._orientation);
+            //} 
 
             x = this._orientation[0];
             y = this._orientation[1];
@@ -296,11 +296,11 @@ var Transform = exports.Transform = Object.create(Base, {
             this._orientation = value;
             this._updateDirtyFlag(true);
         }, get: function(value) {
-            if (this._dirtyRotation)    
+            /*if (this._dirtyRotation)    
                 this._rebuildAffinesIfNeeded();
             if (this._rotationMode !== Transform._QUATERNION) {
                 quat4.fromAngleAxis(this._rotation[3], this._rotation, this._orientation);
-            }
+            }*/
             return this._orientation;
         }
     },
@@ -354,7 +354,8 @@ var Transform = exports.Transform = Object.create(Base, {
                 this.translation = description.translation ? vec3.create(description.translation) : vec3.createFrom(0,0,0);
                 
                 if (description.rotation) {
-                    this.rotation = vec4.create(description.rotation);
+                    this.orientation = quat4.create(description.rotation);
+                    //this.orientation = quat4.fromAngleAxis(orientation[3], vec3.createFrom(orientation[0],orientation[1],orientation[2]))
                 } else if (description.orientation) {
                     var orientation = description.orientation;
                     this.orientation = quat4.fromAngleAxis(orientation[3], vec3.createFrom(orientation[0],orientation[1],orientation[2]))
