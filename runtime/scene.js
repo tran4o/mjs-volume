@@ -22,6 +22,7 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 var Montage = require("montage").Montage;
+var UUID = require("montage/core/uuid");
 var Node = require("runtime/node").Node;
 var RuntimeTFLoader = require("runtime/runtime-tf-loader").RuntimeTFLoader;
 var URL = require("url");
@@ -104,50 +105,62 @@ exports.Scene = Target.specialize( {
             var styleSheetsCount = document.styleSheets.length;
             var i;
             var styleSheet;
-            var styleSheets = [];
             this.styleSheets = {};
-            
-            for (i = 0; i < styleSheetsCount; i++) {    
-                styleSheet = document.styleSheets[i]; 
+
+
+            for (i = 0; i < styleSheetsCount; i++) {
+                styleSheet = document.styleSheets[i];
+
                 if (styleSheet.href != null) {
                     if (styleSheet.href.indexOf(packages[0]) != -1) {
                         //HACK: packages[0] is guaranted to be the entry point
-                         //we just want the CSS from this project but not the ones from its dependencies
+                        //we just want the CSS from this project but not the ones from its dependencies
                         if (styleSheet.href.indexOf(packages[0] + "node_modules") == -1) {
-                            styleSheets.push(styleSheet);
+                            styleSheetsLoaded++;
+                            this._addStyleSheets(this._getStyleSheetContent(styleSheet));
                         }
                     }
-                }  
+                } else {
+                    styleSheetsLoaded++;
+                    this._addStyleSheets(this._getStyleSheetContent(styleSheet));
+                }
             }
 
-            styleSheetsCount = styleSheets.length;
-            if (styleSheetsCount === 0) {
+            if (styleSheetsLoaded === 0) {
                 this.styleSheetsLoaded = true;
                 return;
+            } else {
+                this.dispatchEventNamed("styleSheetsDidLoad", true, false, this);
             }
 
-            styleSheets.forEach(function(styleSheet) {
-                    var self = this;
-                    //FIXME: handle error
-                    var cssPath = styleSheet.href;
-                    var cssXHR = new XMLHttpRequest();
-                    cssXHR.open("GET", cssPath, true);
-                    cssXHR.onreadystatechange = function() {
-                        if (cssXHR.readyState == 4) {
-                            if (cssXHR.status == 200) {
-                                var cssDescription = CSSOM.parse(cssXHR.responseText);
-                                self.styleSheets[styleSheet.href] = cssDescription;
-                                styleSheetsLoaded++;  
-                                if (styleSheetsLoaded === styleSheetsCount) {
-                                    self.dispatchEventNamed("styleSheetsDidLoad", true, false, self);
-                                }                              
-                            }
-                        }
-                    }
-                    cssXHR.send(null);
-            }, this);
+            return false;
+        }
+    },
 
-            return false;                                          
+    _addStyleSheets: {
+        value: function (styleSheetContent, styleSheetID) {
+            if (!styleSheetID) {
+                styleSheetID = UUID.generate();
+            }
+
+            this.styleSheets[styleSheetID] = CSSOM.parse(styleSheetContent);
+        }
+    },
+
+    _getStyleSheetContent: {
+        value: function (styleSheet) {
+            var cssRules = styleSheet.cssRules,
+                styleSheetContent = '';
+
+            Object.keys(cssRules).forEach(function (key) {
+                var cssRule = cssRules[key];
+
+                if (cssRule.hasOwnProperty('cssText')) {
+                    styleSheetContent += cssRule.cssText;
+                }
+            });
+
+            return styleSheetContent;
         }
     },
 
