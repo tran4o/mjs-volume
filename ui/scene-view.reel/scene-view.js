@@ -30,10 +30,10 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 </copyright> */
 /**
-    @module "montage/ui/view.reel"
-    @requires montage
-    @requires montage/ui/component
-*/
+ * @module "montage/ui/view.reel"
+ * @requires montage
+ * @requires montage/ui/component
+ */
 
 require("runtime/dependencies/gl-matrix");
 var Montage = require("montage").Montage;
@@ -64,40 +64,48 @@ var ActionDispatcher = require("runtime/action-dispatcher").ActionDispatcher;
 var Application = require("montage/core/application").Application;
 require("runtime/dependencies/webgl-debug");
 /**
-    Description TODO
-    @class module:"montage/ui/view.reel".view
-    @extends module:montage/ui/component.Component
-*/
+ * Description TODO
+ * 
+ * @class module:"montage/ui/view.reel".view
+ * @extends module:montage/ui/component.Component
+ */
 
 exports.SceneView = Component.specialize( {
 
     /**
-     * If true the viewer will automatically switch from one animated viewPoint to another
-     * @type {boolean}
-     * @default true
-     */
+	 * If true the viewer will automatically switch from one animated viewPoint
+	 * to another
+	 * 
+	 * @type {boolean}
+	 * @default true
+	 */
     automaticallyCyclesThroughViewPoints: { value: true, writable: true },
 
 
     /**
-     * If false the scene will be shown only when all resources have been loaded.
-     * @type {boolean}
-     * @default true
-     */
+	 * If false the scene will be shown only when all resources have been
+	 * loaded.
+	 * 
+	 * @type {boolean}
+	 * @default true
+	 */
     allowsProgressiveSceneLoading: { value:false, writable:true },
 
     /**
-     * If false the scene will be shown only when all resources have been loaded.
-     * @type {boolean}
-     * @default true
-     */
+	 * If false the scene will be shown only when all resources have been
+	 * loaded.
+	 * 
+	 * @type {boolean}
+	 * @default true
+	 */
     allowsViewPointControl: { value: true, writable: true },
 
     /**
-     * A Scene object from runtime/scene to be rendered by SceneView.
-     * @type {object}
-     * @default true
-     */
+	 * A Scene object from runtime/scene to be rendered by SceneView.
+	 * 
+	 * @type {object}
+	 * @default true
+	 */
     scene: {
         get: function() {
             return this._scene;
@@ -105,7 +113,7 @@ exports.SceneView = Component.specialize( {
 
         set: function(value) {
             if (value) {
-                //FIXME:sort of a hack, only set the scene when ready
+                // FIXME:sort of a hack, only set the scene when ready
                 if (value.isLoaded() === false) {
                     value.addOwnPropertyChangeListener("status", this);
                     return;
@@ -124,9 +132,9 @@ exports.SceneView = Component.specialize( {
     },
 
     /**
-     * 
-     * @type {object}
-     */
+	 * 
+	 * @type {object}
+	 */
     viewPoint: {
         get: function() {
             return this._viewPoint;
@@ -194,9 +202,10 @@ exports.SceneView = Component.specialize( {
 
     loops: { value: true, writable: true},
 
-    /* Private / Internal section
-        all the following section including constants and code is private 
-    */
+    /*
+	 * Private / Internal section all the following section including constants
+	 * and code is private
+	 */
 
     STOP: { value: 0, writable: true },
 
@@ -238,7 +247,8 @@ exports.SceneView = Component.specialize( {
 
     _contextAttributes : { value: null, writable: true },
 
-    //FIXME: figure out why the clear made by the browser isn't performed when no draw element is performed
+    // FIXME: figure out why the clear made by the browser isn't performed when
+	// no draw element is performed
     _shouldForceClear: { value: false, writable: true },
 
     _viewPointIndex: { value: 0, writable: true },
@@ -282,7 +292,19 @@ exports.SceneView = Component.specialize( {
                 var animationManager = this.scene.glTFElement.animationManager;
                 if (animationManager.sceneTime / 1000. > endTime) {
                     if (this.automaticallyCyclesThroughViewPoints == true) {
-                        var viewPointIndex = this.sceneView._viewPointIndex; //_viewPointIndex is private in view, we could actually put/access this info from scene
+                        var viewPointIndex = this.sceneView._viewPointIndex; // _viewPointIndex
+																				// is
+																				// private
+																				// in
+																				// view,
+																				// we
+																				// could
+																				// actually
+																				// put/access
+																				// this
+																				// info
+																				// from
+																				// scene
                         var viewPoints = SceneHelper.getViewPoints(this.scene);
                         if (viewPoints.length > 0) {
                             var nextViewPoint;
@@ -325,7 +347,7 @@ exports.SceneView = Component.specialize( {
 
     sceneDidChange: {
         value: function() {
-            //FIXME: incoming scene should not be expected to be just non null
+            // FIXME: incoming scene should not be expected to be just non null
             if (this._scene) {
                 this._sceneResourcesLoaded = false;
                 this._scene.addEventListener("cursorUpdate", this);
@@ -345,7 +367,7 @@ exports.SceneView = Component.specialize( {
     // Resources
     resourceAvailable: {
         value: function(resource) {
-            //only issue draw once all requests finished
+            // only issue draw once all requests finished
             if (this.allowsProgressiveSceneLoading == false) {
                 var resourceManager = this.getResourceManager();
                 if (resourceManager) {
@@ -363,7 +385,7 @@ exports.SceneView = Component.specialize( {
             if (resourceManager && this.sceneRenderer) {
                 if (this.sceneRenderer.webGLRenderer) {
                     var webGLContext = this.sceneRenderer.webGLRenderer.webGLContext;
-                    //trigger texture load/creation
+                    // trigger texture load/creation
                     var texture = resourceManager.getResource(evt.detail.value, this.sceneRenderer.webGLRenderer.textureDelegate, webGLContext);
                     if (texture) {
                         this.resourceAvailable();
@@ -401,7 +423,7 @@ exports.SceneView = Component.specialize( {
     animationDidStart: {
         value: function(animation) {
             this.needsDraw = true;
-            //FIXME:Work-around a cursor issue as after a camera change
+            // FIXME:Work-around a cursor issue as after a camera change
             this.element.style.cursor = "default";            
         }
     },
@@ -435,13 +457,16 @@ exports.SceneView = Component.specialize( {
                 if (newViewPoint) {
                     if (this.scene.glTFElement) {
                         var animationManager = this.getAnimationManager();
-                        //we do not animate already animated cameras
+                        // we do not animate already animated cameras
                         var hasStaticViewPoint = animationManager.nodeHasAnimatedAncestor(newViewPoint.glTFElement) == false;
                         if (hasStaticViewPoint == false && previousViewPoint != null) {
                             hasStaticViewPoint |= animationManager.nodeHasAnimatedAncestor(previousViewPoint.glTFElement) == false;
                         }
                         if (hasStaticViewPoint && (previousViewPoint != null)) {
-                            /* manually add the animation to handle the camera blending */
+                            /*
+							 * manually add the animation to handle the camera
+							 * blending
+							 */
                             var viewPointAnimationStep = Object.create(BasicAnimation).init();
 
                             viewPointAnimationStep.path = "_viewPointAnimationStep";
@@ -456,7 +481,7 @@ exports.SceneView = Component.specialize( {
 
                             animationManager.playAnimation(viewPointAnimationStep);
 
-                            //FIXME: This is an internal detail exposed for now
+                            // FIXME: This is an internal detail exposed for now
                             viewPointAnimationStep.animationWasAddedToTarget();
                         }
                     }
@@ -550,7 +575,7 @@ exports.SceneView = Component.specialize( {
         }
     },
 
-    //FIXME: cache this in the scene
+    // FIXME: cache this in the scene
     _getViewPointIndex: {
         value: function(viewPoint) {
             var viewPoints = SceneHelper.getGLTFViewPoints(viewPoint.scene);
@@ -718,7 +743,7 @@ exports.SceneView = Component.specialize( {
             this.canvas.removeEventListener(wheelEventName, composer, true);
             this.canvas.removeEventListener(wheelEventName, composer, false);
 
-            var simulateContextLoss = false;  //Very naive for now
+            var simulateContextLoss = false;  // Very naive for now
 
             if (simulateContextLoss) {
                 this.canvas = WebGLDebugUtils.makeLostContextSimulatingCanvas(this.canvas);
@@ -732,7 +757,8 @@ exports.SceneView = Component.specialize( {
                 throw WebGLDebugUtils.glEnumToString(err) + " was caused by call to: " + funcName;
             };
 
-            //webGLContext = WebGLDebugUtils.makeDebugContext(webGLContext, throwOnGLError);
+            // webGLContext = WebGLDebugUtils.makeDebugContext(webGLContext,
+			// throwOnGLError);
 
             if (webGLContext == null) {
                 console.log("Please check that your browser enables & supports WebGL");
@@ -748,7 +774,7 @@ exports.SceneView = Component.specialize( {
                 console.log("WARNING: anti-aliasing is not supported/enabled")
             }
 
-            //check from http://davidwalsh.name/detect-ipad
+            // check from http://davidwalsh.name/detect-ipad
             if (navigator) {
                 // For use within normal web clients
                 var isiPad = navigator.userAgent.match(/iPad/i) != null;
@@ -801,7 +827,7 @@ exports.SceneView = Component.specialize( {
                 }, 5000);
             }
 
-            //setup gradient
+            // setup gradient
             var self = this;
             var techniquePromise = BuiltInAssets.assetWithName("gradient");
             techniquePromise.then(function (glTFScene_) {
@@ -896,7 +922,7 @@ exports.SceneView = Component.specialize( {
 
             }
 
-            //are we out of a move ?
+            // are we out of a move ?
             if (previousGlTFElement && previousHandledComponent3D && this._previousNodeEventType === this._TOUCH_MOVE &&
                 glTFElement !== previousGlTFElement) {
                 previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._EXIT);
@@ -946,7 +972,7 @@ exports.SceneView = Component.specialize( {
 
             }
 
-            //are we out of a move ?
+            // are we out of a move ?
             if (previousGlTFElement && previousHandledComponent3D && this._previousMaterialEventType === this._TOUCH_MOVE &&
                 glTFElement !== previousGlTFElement) {
                 previousHandledComponent3D.handleActionOnGlTFElement(previousGlTFElement, Component3D._EXIT);
@@ -1096,7 +1122,8 @@ exports.SceneView = Component.specialize( {
             if (!this.scene)
                 return;
             if (this.scene.glTFElement) {
-                if (glTFNode.getBoundingBox != null) { //work-around issue with scene-tree
+                if (glTFNode.getBoundingBox != null) { // work-around issue
+														// with scene-tree
                     var cameraMatrix = this.sceneRenderer.technique.rootPass.scenePassRenderer._viewPointMatrix;    
                     var glTFCamera = SceneHelper.getGLTFCamera(this.viewPoint);
                     if (glTFCamera != null) {
@@ -1163,7 +1190,12 @@ exports.SceneView = Component.specialize( {
                 if (animationManager.nodeHasAnimatedAncestor(this.viewPoint.glTFElement) == true) {
                     return;
                 }
-                var viewPointIndex = this._viewPointIndex; //_viewPointIndex is private in view, we could actually put/access this info from scene
+                var viewPointIndex = this._viewPointIndex; // _viewPointIndex
+															// is private in
+															// view, we could
+															// actually
+															// put/access this
+															// info from scene
                 var viewPoints = SceneHelper.getViewPoints(this.scene);
                 if (viewPoints.length > 1) {
                     var nextViewPoint = this.viewPoint;
@@ -1181,13 +1213,13 @@ exports.SceneView = Component.specialize( {
 
     draw: {
         value: function() {
-            //Update canvas when size changed
+            // Update canvas when size changed
             var webGLContext = this.getWebGLContext();
             if (webGLContext == null || this._disableRendering)
                 return;
             this.sceneRenderer.technique.rootPass.viewPoint = this._internalViewPoint;
 
-            //WebGL does it for us with preserveDrawBuffer = false
+            // WebGL does it for us with preserveDrawBuffer = false
             if (this._shouldForceClear || (this._contextAttributes.preserveDrawingBuffer == null) || (this._contextAttributes.preserveDrawingBuffer == true)) {
                 webGLContext.clearColor(0,0,0,0.);
                 webGLContext.clear(webGLContext.DEPTH_BUFFER_BIT | webGLContext.COLOR_BUFFER_BIT);
@@ -1254,17 +1286,21 @@ exports.SceneView = Component.specialize( {
                     if (this.__renderOptions == null)
                         this.__renderOptions = {};
 
-                    //FIXME: on the iPad with private function to enable webGL there was an issue with depthMask (need to re-check if that got fixed)
+                    // FIXME: on the iPad with private function to enable webGL
+					// there was an issue with depthMask (need to re-check if
+					// that got fixed)
                     var allowsReflection = this.showReflection;
                     if(allowsReflection) {
-                        /* ------------------------------------------------------------------------------------------------------------
-                         Draw reflected scene
-                        ------------------------------------------------------------------------------------------------------------ */
+                        /*
+						 * ------------------------------------------------------------------------------------------------------------
+						 * Draw reflected scene
+						 * ------------------------------------------------------------------------------------------------------------
+						 */
                         webGLContext.depthFunc(webGLContext.LESS);
                         webGLContext.enable(webGLContext.DEPTH_TEST);
                         webGLContext.frontFace(webGLContext.CW);
                         webGLContext.depthMask(true);
-                        //should retrieve by node
+                        // should retrieve by node
                         var rootNode = this.scene.glTFElement.rootNode;
                         var nodeBBOX = rootNode.getBoundingBox(true);
                         var savedTr = mat4.create(rootNode.transform.matrix);
@@ -1283,7 +1319,8 @@ exports.SceneView = Component.specialize( {
                     }
 
                     if (this.showGradient || allowsReflection) {
-                        //FIXME:For now, just allow reflection when using default camera
+                        // FIXME:For now, just allow reflection when using
+						// default camera
                         if (this.viewPoint === this._defaultViewPoint) {
                             if (this.gradientRenderer) {
                                 webGLContext.enable(webGLContext.BLEND);
@@ -1308,7 +1345,7 @@ exports.SceneView = Component.specialize( {
                             this.sceneRenderer.render(time, this.__renderOptions);
                         } 
                         if (this.scene.materialsShouldBeHitTested) {
-                            this.__renderOptions.picking = true;
+			                this.__renderOptions.picking = true;
                             this.__renderOptions.coords = this._mousePosition;
                             this.__renderOptions.delegate = this;
                             this.__renderOptions.pickingMode = "material";
@@ -1323,8 +1360,10 @@ exports.SceneView = Component.specialize( {
 
                     this.sceneRenderer.render(time, this.__renderOptions);
 
-                    //FIXME: ...create an API to retrieve the actual viewPoint matrix...
+                    // FIXME: ...create an API to retrieve the actual viewPoint
+					// matrix...
                     if (this.showBBOX) {
+                        webGLContext.clear(webGLContext.DEPTH_BUFFER_BIT);
                         this._displayAllBBOX();
                     }
                     
@@ -1342,11 +1381,10 @@ exports.SceneView = Component.specialize( {
                     }
 
                     /*
-                    var error = webGLContext.getError();
-                    if (error != webGLContext.NO_ERROR) {
-                        console.log("gl error"+webGLContext.getError());
-                    }
-                    */
+					 * var error = webGLContext.getError(); if (error !=
+					 * webGLContext.NO_ERROR) { console.log("gl
+					 * error"+webGLContext.getError()); }
+					 */
                 }
             }
         }

@@ -134,67 +134,30 @@ exports.CameraController = Montage.specialize( {
             if (this.moving)
                 return;
 
-            var self = this;
-            var direction = vec3.create();
-            var eye = vec3.create(this.viewPoint.glTFElement.transform.translation);
-
-            var targetPosition;
-            var rootNode = this.node.glTFElement;
-            var sceneBBox =  this.sceneBBox;
-            targetPosition = [
-                (sceneBBox[0][0] + sceneBBox[1][0]) / 2,
-                (sceneBBox[0][1] + sceneBBox[1][1]) / 2,
-                (sceneBBox[0][2] + sceneBBox[1][2]) / 2];
-            
-            direction[0] = targetPosition[0] - eye[0];
-            direction[1] = targetPosition[1] - eye[1];
-            direction[2] = targetPosition[2] - eye[2];
-
-            vec3.normalize(direction);
-
             var delta = this._deltaForEvent(event);
-
             var wheelStep =  this.zoomStep * delta;
-
+            var self = this;
+            var eye = vec3.create(this.viewPoint.glTFElement.transform.translation);
+            var len = 1.0;
+            var direction = vec3.createFrom(0, 0, len);
+            mat4.rotateVec3(this.viewPoint.glTFElement.transform.matrix, direction);            
             eye[0] += wheelStep * direction[0];
             eye[1] += wheelStep * direction[1];
             eye[2] += wheelStep * direction[2];
-
-            var distVec = vec3.create();
-
-            distVec[0] = targetPosition[0] - eye[0];
-            distVec[1] = targetPosition[1] - eye[1];
-            distVec[2] = targetPosition[2] - eye[2];
-            var distance = vec3.length(distVec);
-            if (distance > this._minimalDistance) {
-                this.viewPoint.glTFElement.transform.translation = eye;
-            } else {
-                var minimalDistance = (delta > 0) ? -this._minimalDistance : this._minimalDistance;
-
-                eye[0] = targetPosition[0] + direction[0] * minimalDistance;
-                eye[1] = targetPosition[1] + direction[1] * minimalDistance;
-                eye[2] = targetPosition[2] + direction[2] * minimalDistance;
-
-                this.viewPoint.glTFElement.transform.translation = eye;
-            }
+            this.viewPoint.glTFElement.transform.translation = eye;
         }
     },
 
     translate: {
         value: function(event) {
-            this._transform.matrix = this.viewPoint.glTFElement.worldMatrix;
+            //this._transform.matrix = this.viewPoint.glTFElement.worldMatrix;
             if (this.moving == false)
                  return;
-
-            var xDelta = event.translateX - this._lastPosition[0];
-            var yDelta = event.translateY - this._lastPosition[1];
-
-            this._lastPosition[0] = event.translateX;
-            this._lastPosition[1] = event.translateY;
-
+            var xDelta = event.translateX-this._lastPosition[0];
+            var yDelta = event.translateY-this._lastPosition[1];
             xDelta  *=  0.05;
             yDelta  *=  -0.05;
-
+            //-----------------------------------------------------------
             //if (this._axisUp == null) {
                 this._axisUp = vec3.createFrom(0, 1, 0);
                 mat4.rotateVec3(this._transform.matrix, this._axisUp);
@@ -209,9 +172,19 @@ exports.CameraController = Montage.specialize( {
                     (sceneBBox[0][1] + sceneBBox[1][1]) / 2,
                     (sceneBBox[0][2] + sceneBBox[1][2]) / 2];
             }
+            
+            
             var direction = vec3.create();
             var eye = vec3.create(this._transform.translation);
 
+            var xvec = vec3.createFrom(1, 0, 0);
+            mat4.rotateVec3(this._transform.matrix, xvec);            
+
+            var len = -1;
+            var avec = vec3.createFrom(0, 0, len);
+            mat4.rotateVec3(this._transform.matrix, avec);            
+            targetPosition=[eye[0]+avec[0],eye[1]+avec[1],eye[2]+avec[2]];
+                            
             direction[0] = targetPosition[0] - eye[0];
             direction[1] = targetPosition[1] - eye[1];
             direction[2] = targetPosition[2] - eye[2];
@@ -226,21 +199,14 @@ exports.CameraController = Montage.specialize( {
 
             var cameraMat = mat4.identity();
 
-            var ratio = 0;
-            if (Math.abs(yDelta) > Math.abs(xDelta)) {
-                ratio = Math.abs(yDelta) / Math.abs(xDelta);
-            } else {
-                ratio = Math.abs(xDelta) / Math.abs(yDelta);
-            }
-
-            if (ratio > 0.5) {
-                mat4.rotate(cameraMat, xDelta, axisUpAdjusted);
-                mat4.rotate(cameraMat, yDelta, right);
-            } else
-            if (Math.abs(yDelta) > Math.abs(xDelta))
-                mat4.rotate(cameraMat, yDelta, right);
+			var ok = this.__des;
+			if (this.__des == undefined) {
+				this.__des=Math.abs(yDelta) > Math.abs(xDelta);
+			}
+            if (this.__des)
+                mat4.rotate(cameraMat, -yDelta*0.65, right);
             else
-                mat4.rotate(cameraMat, xDelta, axisUpAdjusted);
+                mat4.rotate(cameraMat, -xDelta, axisUpAdjusted);
 
             eye[0] -= targetPosition[0];
             eye[1] -= targetPosition[1];
@@ -270,14 +236,16 @@ exports.CameraController = Montage.specialize( {
             if (this._transform == null) {
                 this._transform = Object.create(Transform).init();
             }
-            this._transform.matrix = this.viewPoint.glTFElement.worldMatrix;
+            this._transform.matrix = this.viewPoint.glTFElement.transform.matrix;
+            this._lastPosition[0] = event.translateX;
+            this._lastPosition[1] = event.translateY;
         }
     },
 
     endTranslate: {
         value: function(event) {
             this.moving = false;
-
+			delete this.__des;
             this._axisUp = null;
         }
     }

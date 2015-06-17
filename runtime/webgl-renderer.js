@@ -178,20 +178,46 @@ var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
         get: function() {
             if (!this._debugProgram) {
                 this._debugProgram = Object.create(GLSLProgram);
-                var debugVS =   "precision highp float;" +
-                    "attribute vec3 vert;"  +
-                    "uniform mat4 u_mvMatrix; " +
-                    "uniform mat4 u_projMatrix; " +
-                    "void main(void) { " +
-                    "gl_Position = u_projMatrix * u_mvMatrix * vec4(vert,1.0); }"
+                
+                var vertexShader = "precision highp float;"+
+                "attribute vec3 a_position;"+
+                "attribute vec3 a_normal;"+
+                "varying vec3 v_normal;"+
+                "uniform mat3 u_normalMatrix;"+
+                "uniform mat4 u_modelViewMatrix;"+
+                "uniform mat4 u_projectionMatrix;"+
+                "attribute vec2 a_texcoord0;"+
+                "varying vec2 v_texcoord0;"+
+                "void main(void) {"+
+                "vec4 pos = u_modelViewMatrix * vec4(a_position,1.0);"+
+                "v_normal = u_normalMatrix * a_normal;"+
+                "v_texcoord0 = a_texcoord0;"+
+                "gl_Position = u_projectionMatrix * pos;"+
+                "}";
 
-                var debugFS =   "precision highp float;" +
-                    "void main(void) { " +
-                    "gl_FragColor = vec4(1.,0.,0.,1.); }";
-
-                this._debugProgram.initWithShaders( { "x-shader/x-vertex" : debugVS , "x-shader/x-fragment" : debugFS } );
+                var fragmentShader=
+                "precision highp float;"+
+                "varying vec3 v_normal;"+
+                "varying vec2 v_texcoord0;"+
+                "uniform sampler2D u_diffuse;"+
+                "uniform vec4 u_emission;"+
+                "uniform float u_shininess;"+
+                "void main(void) {"+
+                "vec4 scol = vec4(0.8, 0.8, 1, 0.5);"+
+                "vec4 color = vec4(0., 0., 0., 0.);"+
+                "vec4 diffuse = vec4(0., 0., 0., 1.);"+
+                "vec4 emission;"+
+                "diffuse = texture2D(u_diffuse, v_texcoord0);"+
+                "emission = u_emission;"+
+                "color.xyz += diffuse.xyz;"+
+                "color.xyz += emission.xyz;"+
+                "color = vec4(0.45*color.g,0.45*color.g,0.45*color.b+(color.r+color.g+color.b)/3.0*0.55,1);"+
+                "gl_FragColor = color;"+
+                "}";
+                
+            	this._debugProgram.initWithShaders( {    "x-shader/x-vertex" : vertexShader ,"x-shader/x-fragment" : fragmentShader } );
                 if (!this._debugProgram.build(this.webGLContext)) {
-                    console.log(this._debugProgram.errorLogs);
+                    console.error(this._debugProgram.errorLogs);
                 }
 
             }
@@ -889,6 +915,22 @@ var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
             var newMaxEnabledArray = -1;
             var gl = this.webGLContext;
             var program =  this.bindedProgram;
+            //console.log("NODE : "+primitiveDescription.node.id);
+            //console.log(primitiveDescription.parent.node);
+            //-------------------------
+            // CUSTOM HACK
+            //window.SELECTED="Cube";
+            //console.log(primitiveDescription.node.name);
+            if (typeof window.SELECTED != "undefined" && primitiveDescription && primitiveDescription.node && primitiveDescription.node.name == window.SELECTED) {
+                window.OLDPRG=1;
+            	program =  this.debugProgram;
+                program.use(this._webGLContext, false);
+            } else {
+            	if (window.OLDPRG != 0) 
+            		program.use(this._webGLContext, false);
+                window.OLDPRG=0;
+            }
+            //-------------------------
             var i;
             var currentTexture = 0;
             if (!parameters)
@@ -986,6 +1028,9 @@ var WebGLRenderer = exports.WebGLRenderer = Object.create(Object.prototype, {
                 var symbol = allAttributes[i];
                 var parameter = attributes[symbol];
                 parameter = parameters[parameter];
+                if (!parameter)
+                	continue;
+                	
                 var semantic = parameter.semantic;
                 var accessor = primitive.semantics[semantic];
 
