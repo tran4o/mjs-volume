@@ -153,11 +153,16 @@ exports.CameraController = Montage.specialize( {
             //this._transform.matrix = this.viewPoint.glTFElement.worldMatrix;
             if (this.moving == false)
                  return;
-            var xDelta = event.translateX-this._lastPosition[0];
-            var yDelta = event.translateY-this._lastPosition[1];
+
+            var xDelta = event.translateX - this._lastPosition[0];
+            var yDelta = event.translateY - this._lastPosition[1];
+
+            //this._lastPosition[0] = event.translateX;
+            //this._lastPosition[1] = event.translateY;
+
             xDelta  *=  0.05;
             yDelta  *=  -0.05;
-            //-----------------------------------------------------------
+
             //if (this._axisUp == null) {
                 this._axisUp = vec3.createFrom(0, 1, 0);
                 mat4.rotateVec3(this._transform.matrix, this._axisUp);
@@ -172,19 +177,14 @@ exports.CameraController = Montage.specialize( {
                     (sceneBBox[0][1] + sceneBBox[1][1]) / 2,
                     (sceneBBox[0][2] + sceneBBox[1][2]) / 2];
             }
-            
-            
             var direction = vec3.create();
             var eye = vec3.create(this._transform.translation);
-
-            var xvec = vec3.createFrom(1, 0, 0);
-            mat4.rotateVec3(this._transform.matrix, xvec);            
 
             var len = -1;
             var avec = vec3.createFrom(0, 0, len);
             mat4.rotateVec3(this._transform.matrix, avec);            
             targetPosition=[eye[0]+avec[0],eye[1]+avec[1],eye[2]+avec[2]];
-                            
+
             direction[0] = targetPosition[0] - eye[0];
             direction[1] = targetPosition[1] - eye[1];
             direction[2] = targetPosition[2] - eye[2];
@@ -199,14 +199,21 @@ exports.CameraController = Montage.specialize( {
 
             var cameraMat = mat4.identity();
 
-			var ok = this.__des;
-			if (this.__des == undefined) {
-				this.__des=Math.abs(yDelta) > Math.abs(xDelta);
-			}
-            if (this.__des)
-                mat4.rotate(cameraMat, -yDelta*0.65, right);
+            var ratio = 0;
+            if (Math.abs(yDelta) > Math.abs(xDelta)) {
+                ratio = Math.abs(yDelta) / Math.abs(xDelta);
+            } else {
+                ratio = Math.abs(xDelta) / Math.abs(yDelta);
+            }
+
+            if (ratio > 0.5) {
+                mat4.rotate(cameraMat, xDelta, axisUpAdjusted);
+                mat4.rotate(cameraMat, yDelta, right);
+            } else
+            if (Math.abs(yDelta) > Math.abs(xDelta))
+                mat4.rotate(cameraMat, yDelta, right);
             else
-                mat4.rotate(cameraMat, -xDelta, axisUpAdjusted);
+                mat4.rotate(cameraMat, xDelta, axisUpAdjusted);
 
             eye[0] -= targetPosition[0];
             eye[1] -= targetPosition[1];
