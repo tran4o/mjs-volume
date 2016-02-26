@@ -76,9 +76,22 @@ exports.CameraController = Montage.specialize( {
         }
     },
 
+    // TSV: Fixes bad cam orientation
+    _lastIdentifier: { value: null, writeable: true },
+
     viewPointDidChange: {
         value: function() {
             this._computeInitialDistance();
+        }
+    },
+
+    // TSV: Use this to explicitly set this._transform.matrix on change
+    //      of viewPoint.
+    changeViewPointTrans: {
+        value: function(transMat /*mat4*/) {
+            if (this._transform != null) {
+                this._transform.matrix = transMat;
+            }
         }
     },
 
@@ -136,29 +149,30 @@ exports.CameraController = Montage.specialize( {
 
             var delta = this._deltaForEvent(event);
             var wheelStep =  this.zoomStep * delta;
-            var self = this;
             var eye = vec3.create(this.viewPoint.glTFElement.transform.translation);
             var len = 1.0;
             var direction = vec3.createFrom(0, 0, len);
+
             mat4.rotateVec3(this.viewPoint.glTFElement.transform.matrix, direction);            
             eye[0] += wheelStep * direction[0];
             eye[1] += wheelStep * direction[1];
             eye[2] += wheelStep * direction[2];
+
+            this._transform.translation[0] += wheelStep * direction[0];
+            this._transform.translation[1] += wheelStep * direction[1];
+            this._transform.translation[2] += wheelStep * direction[2];
+
             this.viewPoint.glTFElement.transform.translation = eye;
         }
     },
 
     translate: {
         value: function(event) {
-            //this._transform.matrix = this.viewPoint.glTFElement.worldMatrix;
             if (this.moving == false)
                  return;
 
             var xDelta = event.translateX - this._lastPosition[0];
             var yDelta = event.translateY - this._lastPosition[1];
-
-            //this._lastPosition[0] = event.translateX;
-            //this._lastPosition[1] = event.translateY;
 
             xDelta  *=  0.05;
             yDelta  *=  -0.05;
@@ -170,7 +184,6 @@ exports.CameraController = Montage.specialize( {
             var hasTarget = false;
             var targetPosition;
             if (hasTarget == false) {
-                var rootNode = this.node.glTFElement;
                 var sceneBBox =  this.sceneBBox;
                 targetPosition = [
                     (sceneBBox[0][0] + sceneBBox[1][0]) / 2,
@@ -226,7 +239,7 @@ exports.CameraController = Montage.specialize( {
             eye[2] += targetPosition[2];
 
             var  rotationMatrix = mat4.identity();
-            mat4.multiply3(cameraMat, this._transform.matrix,  rotationMatrix);
+            mat4.multiply3(cameraMat, this._transform.matrix, rotationMatrix);
 
             var translationMatrix = mat4.identity();
             mat4.translate(translationMatrix, eye);
@@ -234,6 +247,8 @@ exports.CameraController = Montage.specialize( {
             var finalMat = mat4.identity();
             mat4.multiply(translationMatrix, rotationMatrix, finalMat);
             this.viewPoint.glTFElement.transform.matrix = finalMat;
+
+            console.log(finalMat);
         }
     },
 
@@ -242,17 +257,39 @@ exports.CameraController = Montage.specialize( {
             this.moving = true;
             if (this._transform == null) {
                 this._transform = Object.create(Transform).init();
+                // TSV: Fixes bad cam rotation
+                //      If this._transform.matrix is updated on each beginTranslate,
+                //      the translation begins at a different orientation each
+                //      time, causing bad camera behavior.  Uncomment the `Old`
+                //      code to see what happens.
+                this._transform.matrix = this.viewPoint.glTFElement.transform.matrix;
             }
+            /* 
+            // Old
             this._transform.matrix = this.viewPoint.glTFElement.transform.matrix;
             this._lastPosition[0] = event.translateX;
             this._lastPosition[1] = event.translateY;
+            */
+
+            // TSV: Fixes bad cam rotation
+            //      this._lastPosition should only be updated when cameras are 
+            //      switched, otherwise the orientation would begin at the
+            //      same target every time the left mouse button is pressed and  
+            //      the camera is moved.  Uncomment and see what happens.
+            var currIdentifier = this.viewPoint.glTFElement.name;
+            if (this._lastIdentifier == null || 
+                    currIdentifier !== this._lastIdentifier) {
+                this._lastPosition[0] = event.translateX;
+                this._lastPosition[1] = event.translateY;
+                this._lastIdentifier = currIdentifier;
+            }
         }
     },
 
     endTranslate: {
         value: function(event) {
             this.moving = false;
-			delete this.__des;
+            delete this.__des;
             this._axisUp = null;
         }
     }
