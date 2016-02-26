@@ -508,6 +508,16 @@ exports.SceneView = Component.specialize( {
         }
     },
 
+    // TSV: Use this to explicitly set 
+    //      this._viewPoint.glTFElement.transform.matrix on change
+    changeViewPointTrans: {
+        value: function(transMat /*mat4*/) {
+            if (this._viewPoint.glTFElement != null) {
+                this._viewPoint.glTFElement.transform.matrix = transMat;
+            }
+        }
+    },
+
     viewPoint: {
         get: function() {
             return this._viewPoint;
@@ -1378,6 +1388,9 @@ exports.SceneView = Component.specialize( {
                     if (this._firstFrameDidRender === false) {
                         this._firstFrameDidRender = true;
                         this.dispatchEventNamed("firstFrameDidRender", true, false, this);
+
+                        globalFirstFrameDidRender.changed = true;
+                        console.log("ended draw");
                     }
 
                     /*
