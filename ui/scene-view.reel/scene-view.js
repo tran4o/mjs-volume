@@ -1388,9 +1388,6 @@ exports.SceneView = Component.specialize( {
                     if (this._firstFrameDidRender === false) {
                         this._firstFrameDidRender = true;
                         this.dispatchEventNamed("firstFrameDidRender", true, false, this);
-
-                        globalFirstFrameDidRender.changed = true;
-                        console.log("ended draw");
                     }
 
                     /*
